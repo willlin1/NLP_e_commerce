@@ -1,0 +1,137 @@
+/* 設置頁面整體佈局 */
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+}
+
+/* 使用 CSS Grid 來創建三塊分割 */
+.grid-container {
+    display: grid;
+    grid-template-columns: 50% 50%; /* 左 50% 右 50% */
+    grid-template-rows: 20% 80%; /* 左側分為上下兩部分 */
+    height: 100vh;
+}
+
+/* 設定每個區塊的樣式 */
+.grid-item {
+    border: 1px solid black;
+    padding: 20px;
+    text-align: center;
+}
+
+/* 左上角區塊 */
+.left-top {
+    background-color: lightblue;
+    grid-column: 1; /* 第一列 */
+    grid-row: 1; /* 第一行 */
+}
+
+/* 左下角區塊 */
+.left-bottom {
+    background-color: lightgreen;
+    grid-column: 1; /* 第一列 */
+    grid-row: 2; /* 第二行 */
+}
+
+/* 右側區塊，跨越整個高度 */
+.right {
+    background-color: lightcoral;
+    grid-column: 2; /* 第二列 */
+    grid-row: 1 / span 2; /* 從第一行開始，跨越兩行 */
+}
+
+.left-top h1 {
+    font-size: 32px; /* 讓標題變大 */
+    font-weight: bold; /* 加粗 */
+    margin-bottom: 15px; /* 與輸入框間隔 */
+}
+
+.left-top input {
+    font-size: 20px; /* 讓輸入框內文字變大 */
+    padding: 10px; /* 增加內邊距 */
+    width: 80%; /* 設定寬度 */
+    border-radius: 5px; /* 圓角 */
+    border: 1px solid #ccc; /* 邊框 */
+}
+
+.left-top button {
+    font-size: 20px; /* 讓按鈕內文字變大 */
+    padding: 10px 20px; /* 增加內邊距 */
+    margin-top: 10px; /* 與輸入框間隔 */
+    background-color: #ff6600; /* 設定背景顏色 */
+    color: white; /* 文字顏色 */
+    border: none; /* 移除邊框 */
+    border-radius: 5px; /* 圓角 */
+    cursor: pointer; /* 滑鼠變成手指 */
+}
+
+/* 讓按鈕有懸停效果 */
+.left-top button:hover {
+    background-color: #cc5500;
+}
+
+.left-bottom h2 {
+    font-size: 24px; /* 讓標題變大 */
+    font-weight: bold; /* 加粗 */
+    text-align: center;
+    color: black; /* 讓文字變白色，與背景顏色對比 */
+}
+
+/* 右側區塊，使用 Flexbox 排版 */
+.right {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    padding-top: 20px; /* 讓標題與頂部有間距 */
+    height: 100%; /* 讓右邊區塊填滿整個高度 */
+    box-sizing: border-box; /* 保證內邊距不影響總高度 */
+}
+
+/* 固定標題位置，並讓其不會被遮住 */
+.right h2 {
+    font-size: 28px;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 10px; /* 標題與商品結果之間的間距 */
+    color: black;
+}
+
+/* 設定結果區塊，使其佔據剩餘空間 */
+#result {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* 2 列 */
+    grid-template-rows: repeat(2, 1fr); /* 2 行 */
+    gap: 10px; /* 商品之間的間隔 */
+    width: 90%; /* 讓它填滿右側區塊 */
+    flex-grow: 1; /* 使它佔據剩餘空間 */
+    overflow-y: auto; /* 超過範圍時允許滾動 */
+}
+
+/* 商品樣式 */
+.product {
+    background: white;
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: center;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+/* 設定價格字體大小 */
+.product p {
+    font-size: 20px; /* 讓價格字體變大 */
+    font-weight: bold; /* 可以加粗讓它更顯眼 */
+    margin-top: 10px; /* 與其他內容的間距 */
+}
+
+/* 商品圖片大小 */
+.product img {
+    width: 400px;
+    height: auto;
+}
