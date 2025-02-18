@@ -7,6 +7,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
+import re
 
 app = Flask(__name__)
 
@@ -72,13 +73,97 @@ def search():
         # 抓取momo的搜尋結果
         products = search_momo(keyword)
 
-        # 只取前三個商品
-        top_four_products = products[:4]
-
-        # 返回前三個商品
-        return jsonify({'products': top_four_products})
+        # 返回所有商品（不只四個）
+        return jsonify({'products': products})
     else:
         return jsonify({'error': '請提供搜尋關鍵字'})
+
+# 設定 Chrome 瀏覽器選項
+def configure_chrome_options():
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")  # 如果不需要顯示瀏覽器，可以啟用這行
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument('User-Agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.70 Safari/537.36"')
+    return chrome_options
+
+# 初始化 WebDriver
+def initialize_driver():
+    chrome_options = configure_chrome_options()
+    service = Service(ChromeDriverManager().install())
+    driver = webdriver.Chrome(service=service, options=chrome_options)
+    return driver
+
+# 訪問網頁並抓取評論資料
+def fetch_comments(driver, url):
+    driver.get(url)
+    
+    # 點擊商品評價按鈕
+    review_button = WebDriverWait(driver, 10).until(
+        EC.element_to_be_clickable((By.XPATH, "//li[contains(@class, 'goodsCommendLi')]//span"))
+    )
+    driver.execute_script("arguments[0].click();", review_button)  # 使用 JavaScript 點擊
+
+    time.sleep(3)
+    # 獲取總頁數
+    page_number_element = WebDriverWait(driver, 10).until(
+        EC.presence_of_element_located((By.CSS_SELECTOR, 'div.pageArea span:nth-child(2)'))
+    )
+    # 使用正則表達式提取總頁數
+    total_pages_match = re.search(r'(\d+)/(\d+)', page_number_element.text)
+    
+    total_pages = int(total_pages_match.group(2))
+    
+    # 初始化評論和評分資料
+    comments_data = []
+
+    # 抓取評論和評分
+    def grab_comments_from_page():
+        # 等待評論加載
+        WebDriverWait(driver, 10).until(
+            EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'div.reviewCard'))
+        )
+
+        # 抓取評論
+        comments = driver.find_elements(By.CSS_SELECTOR, 'div.reviewCardInner div.CommentContainer:not(.ReplyContainer .CommentContainer) p.Comment')
+        for comment in comments:
+            comments_data.append(comment.text)     
+
+    # 抓取第一頁評論
+    grab_comments_from_page()
+
+    # 抓取剩餘頁面評論
+    for page in range(2, total_pages + 1):
+        # **修正 XPath 來選擇分頁按鈕**
+        next_page_button = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, f"//dd[@pageidx='{page}']/a"))
+        )
+    
+        # **確保按鈕可以被點擊**
+        driver.execute_script("arguments[0].click();", next_page_button)
+
+
+        # 等待評論加載並抓取評論與評分
+        grab_comments_from_page()
+
+    # 格式化資料
+    comments_data = [[comment] for comment in comments_data]
+
+    return comments_data
+
+@app.route('/get_comments', methods=['POST'])
+def get_comments():
+    data = request.json
+    product_url = data.get("url")
+
+    if not product_url:
+         return jsonify({"error": "缺少商品網址"}), 400
+
+    driver = initialize_driver()
+    comments = fetch_comments(driver, product_url)
+    driver.quit()
+    
+    return jsonify({"comments": comments[:5]})
 
 if __name__ == '__main__':
     app.run(debug=True)

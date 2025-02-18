@@ -6,42 +6,92 @@
     <title>NLP e-commerce</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <script>
-        // 當用戶按下搜尋按鈕時發送搜尋請求
+        let products = [];  // 存放所有商品
+        let currentIndex = 0;  // 目前顯示到哪個商品
+        
+        // 取得搜尋結果
         function searchProducts() {
-            let keyword = document.getElementById("searchInput").value;
-            // 加入調試訊息，看看是否能提取關鍵字
-            console.log("搜尋關鍵字:", keyword);
-            if (keyword) {
-                fetch(`/search?keyword=${keyword}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        // 顯示搜尋結果
-                        let resultDiv = document.getElementById("result");
-                        resultDiv.innerHTML = "";
-
-                        // 只顯示前四樣商品
-                        let productToDisplay = data.products.slice(0, 4);
-
-                        productToDisplay.forEach(product => {
-                            let productElement = document.createElement("div");
-                            productElement.classList.add("product"); // 添加 CSS class
-
-                            productElement.innerHTML = `
-                                <h3>${product.name}</h3>
-                                <img src="${product.image}" alt="${product.name}">
-                                <p>價格: ${product.price}</p>
-                            `;
-                            resultDiv.appendChild(productElement);
-                        });
-                    })
-                    .catch(error => {
-                        console.error('錯誤:', error);
-                    });
-            } else {
-                alert('請輸入搜尋關鍵字!');
+            let keyword = document.getElementById('searchInput').value;
+            fetch(`/search?keyword=${keyword}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.products) {
+                        products = data.products;  // 存儲所有商品
+                        currentIndex = 0;  // 重置索引
+                        displayProducts();  // 顯示第一頁
+                    }
+                });
+        }
+        
+        // 顯示四個商品
+        function displayProducts() {
+            let resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '';  // 清空之前的結果
+        
+            let endIndex = currentIndex + 4;
+            let displayItems = products.slice(currentIndex, endIndex);
+        
+            displayItems.forEach(product => {
+                let productDiv = document.createElement('div');
+                productDiv.classList.add('product');
+                productDiv.innerHTML = `
+                    <img src="${product.image}" alt="${product.name}">
+                    <p><a href="#" onclick="fetchComments('${product.url}')">${product.name}</a></p>
+                    <p>價格: ${product.price}</p>
+                    <a href="${product.url}" target="_blank">查看商品</a>
+                `;
+                resultDiv.appendChild(productDiv);
+            });
+        
+            // 更新按鈕狀態
+            document.getElementById('prevBtn').disabled = currentIndex === 0;
+            document.getElementById('nextBtn').disabled = endIndex >= products.length;
+        }
+        
+        // 切換到下一頁
+        function nextPage() {
+            if (currentIndex + 4 < products.length) {
+                currentIndex += 4;
+                displayProducts();
             }
         }
-    </script>
+        
+        // 切換到上一頁
+        function prevPage() {
+            if (currentIndex - 4 >= 0) {
+                currentIndex -= 4;
+                displayProducts();
+            }
+        }
+
+        function fetchComments(productUrl) {
+            console.log("商品網址:", productUrl);
+            fetch('/get_comments', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ url: productUrl })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById('comments').innerHTML = "<p>無法取得評論</p>";
+                } else {
+                    let commentsHTML = "<h3>前五則評論：</h3><ul>";
+                    data.comments.forEach(comment => {
+                        commentsHTML += `<li>${comment}</li>`;
+                    });
+                    commentsHTML += "</ul>";
+                    document.getElementById('comments').innerHTML = commentsHTML;
+                }
+            })
+            .catch(error => {
+                console.error("錯誤:", error);
+                document.getElementById('comments').innerHTML = "<p>無法取得評論</p>";
+            });
+}
+    </script>          
 </head>
 <body>
     <div class="grid-container">
@@ -52,10 +102,17 @@
         </div>
         <div class="grid-item left-bottom">
             <h2>情感分析結果</h2>
+            <div id="comments"></div>
         </div>
         <div class="grid-item right">
-            <h2 class="right-title">momo熱門商品</h2>
-            <div id="result"></div> 
+            <div class="right-header">
+                <h2 class="right-title">momo熱門商品</h2>
+                <div class="pagination-buttons">
+                    <button id="prevBtn" onclick="prevPage()" disabled>上一頁</button>
+                    <button id="nextBtn" onclick="nextPage()">下一頁</button> 
+                </div>
+            </div>  
+            <div id="result"></div>
         </div>
     </div>   
 </body>
