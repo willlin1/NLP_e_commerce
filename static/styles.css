@@ -4,114 +4,118 @@ body, html {
     padding: 0;
     height: 100%;
     width: 100%;
+    overflow: hidden; /* 避免整體页面出現滾動條 */
 }
 
 /* 2. 主要佈局 */
 .grid-container {
     display: grid;
-    grid-template-columns: 50% 50%;
-    grid-template-rows: 20% 80%;
+    grid-template-columns: 2fr 3fr;
+    grid-template-rows: auto 1fr;
+    gap: 20px;
     height: 100vh;
 }
 
 .grid-item {
-    border: 1px solid black;
     padding: 20px;
-    text-align: center;
 }
 
-/* 3. 左側區塊 */
-.left-top { background-color: lightblue; grid-column: 1; grid-row: 1; }
-.left-bottom { background-color: lightgreen; grid-column: 1; grid-row: 2; }
+/* 左側區塊 */
+.left-top {
+    background-color: lightblue;
+    grid-column: 1 / 2;
+    grid-row: 1 / 2;
+}
 
-/* 4. 右側區塊 */
+.left-bottom {
+    background-color: white;
+    grid-column: 1 / 2;
+    grid-row: 2 / 3;
+}
+
+/* 右側區塊 */
 .right {
     background-color: lightcoral;
-    grid-column: 2;
-    grid-row: 1 / span 2;
+    grid-column: 2 / 3;
+    grid-row: 1 / 3;
+    height: 100%;
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
     align-items: center;
-    padding-top: 20px;
-    height: 100%;
+    padding: 20px;
     box-sizing: border-box;
+    overflow: hidden; /* 確保內部不會滾動 */
 }
 
 /* 讓標題與按鈕在同一行 */
 .right-header {
     display: flex;
-    align-items: center;  /* 讓標題與按鈕垂直對齊 */
-    justify-content: space-between; /* 標題置中，按鈕靠右 */
-    width: 90%; /* 確保與內容對齊 */
+    align-items: center;
+    justify-content: space-between;
+    width: 90%;
     margin-bottom: 10px;
 }
 
 /* 讓標題置中 */
 .right-title {
-    flex-grow: 1; /* 讓標題自動佔據空間，確保它居中 */
+    flex-grow: 1;
     text-align: center;
-    font-size: 28px;
+    font-size: 28px; /* 放大標題 */
     font-weight: bold;
 }
 
 /* 讓按鈕靠右 */
 .pagination-buttons {
     display: flex;
-    gap: 10px; /* 按鈕之間的間距 */
+    gap: 10px;
 }
 
-/* 6. 搜索 & 按鈕樣式 */
-.left-top input {
-    font-size: 20px;
-    padding: 10px;
-    width: 80%;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-}
-
-.left-top button {
-    font-size: 20px;
-    padding: 10px 20px;
-    margin-top: 10px;
-    background-color: #ff6600;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-}
-
-.left-top button:hover { background-color: #cc5500; }
-
-/* 上一頁 / 下一頁 按鈕 */
-#prevBtn, #nextBtn {
-    font-size: 18px;
+/* 按鈕樣式 */
+button {
     padding: 10px 15px;
+    cursor: pointer;
+    font-size: 18px; /* 放大按鈕文字 */
     background-color: #ff6600;
     color: white;
     border: none;
     border-radius: 5px;
-    cursor: pointer;
+}
+
+button:hover {
+    background-color: #cc5500;
+}
+
+#prevBtn, #nextBtn {
     min-width: 80px;
 }
 
-#prevBtn:hover, #nextBtn:hover { background-color: #cc5500; }
 #prevBtn:disabled, #nextBtn:disabled {
     background-color: gray;
     cursor: not-allowed;
 }
 
-/* 8. 商品區塊 */
-#result {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    grid-template-rows: repeat(2, 1fr);
-    gap: 10px;
-    width: 90%;
-    flex-grow: 1;
-    overflow-y: auto;
+/* 搜索框樣式 */
+.left-top input {
+    font-size: 20px; /* 放大搜索框字體 */
+    padding: 12px;
+    width: 80%;
+    border-radius: 5px;
+    border: 1px solid #ccc;
 }
 
+/* 商品區塊 */
+#result {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); /* 每行顯示4個商品 */
+    gap: 15px;
+    width: 95%;
+    flex-grow: 1; /* 讓商品區域填滿 `.right` 剩餘空間 */
+    margin-top: 10px;
+    position: relative;
+    overflow: hidden; /* 確保不會滾動 */
+}
+
+/* 單個商品 */
 .product {
     background: white;
     border: 1px solid #ddd;
@@ -120,17 +124,78 @@ body, html {
     border-radius: 8px;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: space-between; /* 讓內容均勻分佈 */
     align-items: center;
+    height: auto; /* 讓高度自動適應內容 */
+    min-height: 400px; /* 最小高度保持一致 */
+    max-height: none; /* 讓高度無上限，讓文字可以顯示 */
+    overflow: hidden;
+    box-sizing: border-box; /* 確保不會超出邊界 */
 }
 
-.product p {
-    font-size: 20px;
+/* 滑鼠懸停時放大效果 */
+.product:hover {
+    transform: scale(1.05);
+    z-index: 1;
+}
+
+/* 商品名稱 */
+.product .product-name {
+    font-size: 20px;  /* 放大字體 */
     font-weight: bold;
-    margin-top: 10px;
+    text-align: center;
+    line-height: 1.3; /* 控制行距 */
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-clamp: 3; /* 限制最多顯示 3 行 */
+    text-overflow: ellipsis;
+    max-height: 3.8em; /* 增加最大高度，容納更多文字 */
+    white-space: normal;
 }
 
+/* 商品圖片 */
 .product img {
-    width: 400px;
-    height: auto;
+    width: 100%;
+    max-height: 160px; /* 限制圖片高度，避免擠壓內容 */
+    object-fit: contain;
+    flex-grow: 1; /* 讓圖片自適應填滿可用空間 */
+    margin-bottom: 10px; /* 增加圖片和文字之間的間距 */
+}
+
+/* 商品價格 */
+.product .price {
+    font-size: 20px;  /* 稍微放大 */
+    font-weight: bold;
+    color: #ff6600;
+    margin: 5px 0;
+}
+
+/* 商品按鈕 */
+.product button {
+    font-size: 16px;  /* 按鈕文字大小適中 */
+    padding: 8px 12px;
+    width: 90%;
+    max-width: 140px;
+    border-radius: 6px;
+}
+
+/* 載入中...樣式 */
+.loading {
+    font-size: 3em;
+    color: white;
+    font-weight: bold;
+    text-align: center;
+    animation: pulse 1.5s infinite;
+    position: absolute;
+    top: 45%;
+    left: 50%;
+    transform: translate(-45%, -50%);
+}
+
+/* 載入動畫 */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
 }

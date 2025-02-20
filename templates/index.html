@@ -12,6 +12,12 @@
         // 取得搜尋結果
         function searchProducts() {
             let keyword = document.getElementById('searchInput').value;
+            let resultDiv = document.getElementById('result');
+            let commentsDiv = document.getElementById('comments');
+
+            resultDiv.innerHTML = '<p class="loading">載入中...</p>';  // 顯示 loading
+            commentsDiv.innerHTML = '';  // 清空評論
+            
             fetch(`/search?keyword=${keyword}`)
                 .then(response => response.json())
                 .then(data => {
@@ -19,7 +25,12 @@
                         products = data.products;  // 存儲所有商品
                         currentIndex = 0;  // 重置索引
                         displayProducts();  // 顯示第一頁
+                    } else {
+                        resultDiv.innerHTML = '<p>沒有找到商品</p>';
                     }
+                })
+                .catch(() => {
+                    resultDiv.innerHTML = '<p>搜尋失敗，請稍後再試</p>';
                 });
         }
         
@@ -28,44 +39,67 @@
             let resultDiv = document.getElementById('result');
             resultDiv.innerHTML = '';  // 清空之前的結果
         
-            let endIndex = currentIndex + 4;
+            let endIndex = currentIndex + 8; // 每次顯示8個商品 (4x2)
             let displayItems = products.slice(currentIndex, endIndex);
         
             displayItems.forEach(product => {
                 let productDiv = document.createElement('div');
                 productDiv.classList.add('product');
-                productDiv.innerHTML = `
-                    <img src="${product.image}" alt="${product.name}">
-                    <p><a href="#" onclick="fetchComments('${product.url}')">${product.name}</a></p>
-                    <p>價格: ${product.price}</p>
-                    <a href="${product.url}" target="_blank">查看商品</a>
-                `;
+                
+                let productImg = document.createElement('img');
+                productImg.setAttribute('loading', 'lazy'); // 加入懶加載
+                productImg.src = product.image;
+                productImg.alt = product.name;
+                productDiv.appendChild(productImg);
+
+                let productName = document.createElement('p');
+                productName.classList.add('product-name');  // 添加類別名稱
+                let productLink = document.createElement('a');
+                productLink.textContent = product.name;  // 避免 XSS
+                productLink.href = "#";
+                productLink.onclick = () => fetchComments(product.url);
+                productName.appendChild(productLink);
+                productDiv.appendChild(productName);
+
+                let productPrice = document.createElement('p');
+                productPrice.textContent = `價格: ${product.price}`;
+                productDiv.appendChild(productPrice);
+
+                let viewLink = document.createElement('a');
+                viewLink.href = product.url;
+                viewLink.textContent = '查看商品';
+                viewLink.target = "_blank";
+                productDiv.appendChild(viewLink);
+
                 resultDiv.appendChild(productDiv);
             });
-        
+
             // 更新按鈕狀態
             document.getElementById('prevBtn').disabled = currentIndex === 0;
-            document.getElementById('nextBtn').disabled = endIndex >= products.length;
+            document.getElementById('nextBtn').disabled = currentIndex + 8 >= products.length;
         }
         
         // 切換到下一頁
         function nextPage() {
-            if (currentIndex + 4 < products.length) {
-                currentIndex += 4;
+            if (currentIndex + 8 < products.length) {
+                currentIndex += 8;
                 displayProducts();
             }
         }
         
         // 切換到上一頁
         function prevPage() {
-            if (currentIndex - 4 >= 0) {
-                currentIndex -= 4;
+            if (currentIndex - 8 >= 0) {
+                currentIndex -= 8;
                 displayProducts();
             }
         }
 
         function fetchComments(productUrl) {
             console.log("商品網址:", productUrl);
+            let commentsDiv = document.getElementById('comments');
+            commentsDiv.innerHTML = '<p>載入評論中...</p>'; // 顯示 loading
+
             fetch('/get_comments', {
                 method: 'POST',
                 headers: {
@@ -73,31 +107,52 @@
                 },
                 body: JSON.stringify({ url: productUrl })
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    document.getElementById('comments').innerHTML = "<p>無法取得評論</p>";
-                } else {
-                    let commentsHTML = "<h3>前五則評論：</h3><ul>";
-                    data.comments.forEach(comment => {
-                        commentsHTML += `<li>${comment}</li>`;
-                    });
-                    commentsHTML += "</ul>";
-                    document.getElementById('comments').innerHTML = commentsHTML;
-                }
-            })
-            .catch(error => {
-                console.error("錯誤:", error);
-                document.getElementById('comments').innerHTML = "<p>無法取得評論</p>";
-            });
-}
+            .then(response => {
+                console.log("收到回應:", response);
+                if (!response.ok) {  // 檢查 HTTP 狀態碼是否為 200
+                    throw new Error(`HTTP 錯誤：${response.status}`);
+             }
+            return response.json();
+        })
+        .then(data => {
+            if (data && Array.isArray(data.comments) && data.comments.length > 0) {
+                let commentsHTML = "<h3>前五則評論：</h3><ul>";
+                // 取前五則評論
+                data.comments.slice(0, 5).forEach(comment => {
+                    let listItem = document.createElement('li');
+                    listItem.textContent = `${comment.comment} (情感: ${comment.sentiment})`;
+                    commentsHTML += listItem.outerHTML;
+
+                });
+                commentsHTML += "</ul>";
+                commentsDiv.innerHTML = commentsHTML;
+
+                // 顯示情感圓餅圖
+                let pieChartHTML = `<h3>情感統計圖：</h3><img src="data:image/png;base64,${data.pie_chart}" alt="情感統計圖">`;
+                commentsDiv.innerHTML += pieChartHTML;
+            } else {
+                commentsDiv.innerHTML = "<p>商品無任何評論</p>";
+            }
+        })
+        .catch(error => {
+            console.error("錯誤:", error);
+            commentsDiv.innerHTML = "<p>商品目前無評論</p>";
+        });
+    }
+
+        // 當按下 Enter 鍵時觸發搜尋
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                searchProducts();  // 呼叫搜尋函式
+            }
+        }
     </script>          
 </head>
 <body>
     <div class="grid-container">
         <div class="grid-item left-top">
             <h1>Momo 商品搜尋</h1>
-            <input type="text" id="searchInput" placeholder="輸入商品名稱">
+            <input type="text" id="searchInput" placeholder="輸入商品名稱" onkeypress="handleKeyPress(event)">
             <button onclick="searchProducts()">搜尋</button>
         </div>
         <div class="grid-item left-bottom">
